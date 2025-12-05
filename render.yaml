@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: ocs-inventory
+    env: ubuntu
+    plan: free
+    buildCommand: |
+      # update & install packages
+      sudo apt-get update -y
+      sudo apt-get install -y apache2 php php-mysql php-xml php-gd php-curl php-mbstring \
+        libapache2-mod-perl2 perl libdbi-perl libdbd-mysql-perl libxml-simple-perl libsoap-lite-perl unzip mysql-client
+      
+      # enable apache modules
+      sudo a2enmod rewrite cgi headers
+      # deploy code
+      sudo rm -rf /var/www/html/*
+      sudo cp -r . /var/www/html/
+      sudo chown -R www-data:www-data /var/www/html/
+      # replace default site with our apache.conf (if present)
+      if [ -f /var/www/html/apache.conf ]; then
+        sudo cp /var/www/html/apache.conf /etc/apache2/sites-available/000-default.conf
+      fi
+      # allow CGI execution in /var/www/html/OCSInventory-Server (cgi-bin)
+      # restart done in startCommand
+    startCommand: |
+      sudo service apache2 restart
+      # keep process running
+      tail -f /var/log/apache2/access.log /var/log/apache2/error.log
+    envVars:
+      - key: DB_HOST
+      - key: DB_PORT
+      - key: DB_USER
+      - key: DB_PASS
+      - key: DB_NAME
